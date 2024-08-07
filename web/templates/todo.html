@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        #todo-form {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        #todo-input {
+            flex-grow: 1;
+            padding: 5px;
+            font-size: 16px;
+        }
+        button {
+            padding: 5px 10px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #todo-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .todo-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f1f1f1;
+        }
+        .todo-item.completed {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Todo List</h1>
+    <form id="todo-form">
+        <input type="text" id="todo-input" placeholder="Enter a new todo" required>
+        <button type="submit">Add</button>
+    </form>
+    <ul id="todo-list"></ul>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:8080'; // 替换为你的 API URL
+
+        const todoForm = document.getElementById('todo-form');
+        const todoInput = document.getElementById('todo-input');
+        const todoList = document.getElementById('todo-list');
+
+        // 获取所有待办事项
+        async function getTodos() {
+            const response = await fetch(`${API_URL}/todos`);
+            const todos = await response.json();
+            renderTodos(todos);
+        }
+
+        // 渲染待办事项列表
+        function renderTodos(todos) {
+            todoList.innerHTML = '';
+            todos.forEach(todo => {
+                const li = document.createElement('li');
+                li.className = `todo-item ${todo.completed ? 'completed' : ''}`;
+                li.innerHTML = `
+                    <span>${todo.title}</span>
+                    <div>
+                        <button onclick="toggleTodo(${todo.id}, ${!todo.completed})">
+                            ${todo.completed ? 'Undo' : 'Complete'}
+                        </button>
+                        <button onclick="deleteTodo(${todo.id})">Delete</button>
+                    </div>
+                `;
+                todoList.appendChild(li);
+            });
+        }
+
+        // 添加新的待办事项
+        async function addTodo(title) {
+            const response = await fetch(`${API_URL}/todos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, completed: false })
+            });
+            if (response.ok) {
+                todoInput.value = '';
+                getTodos();
+            }
+        }
+
+        // 切换待办事项的完成状态
+        async function toggleTodo(id, completed) {
+            const response = await fetch(`${API_URL}/todos/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ completed })
+            });
+            if (response.ok) {
+                getTodos();
+            }
+        }
+
+        // 删除待办事项
+        async function deleteTodo(id) {
+            const response = await fetch(`${API_URL}/todos/${id}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                getTodos();
+            }
+        }
+
+        // 表单提交事件
+        todoForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (todoInput.value.trim()) {
+                addTodo(todoInput.value.trim());
+            }
+        });
+
+        // 初始加载待办事项
+        getTodos();
+    </script>
+</body>
+</html>
